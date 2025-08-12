@@ -1,0 +1,31 @@
+DELAY 1000
+REM Unlock the phone
+DOWNARROW
+DOWNARROW
+DOWNARROW
+DOWNARROW
+DOWNARROW
+ENTER
+DELAY 1000
+STRING 1234
+ENTER
+DELAY 2000
+REM Swipe up to open the app drawer (adjust based on your phone)
+REM This simulates a swipe gesture from bottom to top
+WINDOWS
+DELAY 1000
+REM Search for WhatsApp by typing "WhatsApp"
+STRING WhatsApp
+DELAY 1000
+DOWNARROW
+DELAY 1000
+ENTER
+DELAY 3000
+REM Tap on the first chat (coordinates will vary by device, adjust as needed)
+REM Simulate a tap on the screen to open the first chat
+SWIPE 400 500 410 510 50
+DELAY 1000
+REM Type and send the message
+STRING Sent by MHC
+SWIPE 1018 2110 1019 2111 50
+TAP 1018 2110

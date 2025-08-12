@@ -1,0 +1,59 @@
+REM Windows OOBE Setup - Region, Keyboard, Username, Privacy
+DELAY 15000
+REM Select Region as India
+DOWNARROW
+DOWNARROW
+DOWNARROW
+DOWNARROW
+DOWNARROW
+ENTER
+DELAY 3000
+REM Keyboard Layout - India (US by default)
+ENTER
+DELAY 2000
+REM Skip adding a second keyboard layout
+TAB
+ENTER
+DELAY 3000
+REM Skip Network setup (if applicable)
+TAB
+TAB
+ENTER
+DELAY 15000
+REM Choose Set Up for Personal Use
+DOWNARROW
+ENTER
+DELAY 5000
+REM Username setup
+TAB
+TAB
+ENTER
+DELAY 2000
+STRING WinUser
+ENTER
+DELAY 2000
+REM No password setup
+TAB
+TAB
+TAB
+ENTER
+DELAY 2000
+ENTER
+DELAY 2000
+REM Disable Privacy Settings (Location, Diagnostics, etc.)
+TAB
+SPACE
+TAB
+SPACE
+TAB
+SPACE
+TAB
+SPACE
+TAB
+SPACE
+DELAY 2000
+REM Accept and move forward
+TAB
+ENTER
+DELAY 10000
+REM Finalizing setup (adjust delay for your setup)

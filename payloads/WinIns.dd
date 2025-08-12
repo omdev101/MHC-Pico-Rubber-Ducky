@@ -1,0 +1,43 @@
+REM Windows Installation Ducky Script - Format and Install
+DELAY 5000
+REM Select language and press Next
+ENTER
+DELAY 2000
+REM Press Install Now
+ENTER
+DELAY 5000
+REM Skip product key (if prompted) - Adjust this if needed
+TAB
+TAB
+SPACE
+DELAY 2000
+REM Accept License Terms
+TAB
+TAB
+SPACE
+DELAY 2000
+REM Select Custom Install
+DOWNARROW
+DOWNARROW
+ENTER
+DELAY 5000
+REM Navigate through existing partitions to delete them
+REM Adjust DELAYs depending on your system speed
+DOWNARROW
+ENTER
+DELAY 2000
+TAB
+TAB
+TAB
+ENTER
+DELAY 2000
+REM Repeat DOWNARROW and DELETE steps for all partitions if needed
+
+REM Select unallocated space
+TAB
+TAB
+TAB
+ENTER
+DELAY 2000
+REM Confirm and start installation
+ENTER

