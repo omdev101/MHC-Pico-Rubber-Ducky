@@ -1,0 +1,316 @@
+REM Windows Security Audit and Hardening Script
+REM This payload performs security assessment and applies basic hardening
+REM Author: MHC Project
+REM Version: 1.0
+REM WARNING: For authorized testing only!
+
+DELAY 2000
+
+REM Open PowerShell as Administrator
+GUI r
+DELAY 500
+STRING powershell
+DELAY 500
+CTRL SHIFT ENTER
+DELAY 2000
+ALT y
+DELAY 2000
+
+REM Set execution policy for this session
+STRING Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+ENTER
+DELAY 2000
+
+REM Create security audit directory
+STRING New-Item -ItemType Directory -Path "C:\SecurityAudit" -Force
+ENTER
+DELAY 1000
+STRING cd C:\SecurityAudit
+ENTER
+
+REM System Information Collection
+STRING Write-Host "=== Windows Security Audit Started ===" -ForegroundColor Green
+ENTER
+DELAY 1000
+
+STRING Write-Host "Collecting System Information..." -ForegroundColor Yellow
+ENTER
+STRING Get-ComputerInfo | Out-File -FilePath "SystemInfo.txt"
+ENTER
+DELAY 5000
+
+STRING Write-Host "Collecting User Account Information..." -ForegroundColor Yellow
+ENTER
+STRING Get-LocalUser | Select Name,Enabled,LastLogon,PasswordRequired | Out-File -FilePath "Users.txt"
+ENTER
+DELAY 2000
+
+STRING Write-Host "Collecting Local Group Information..." -ForegroundColor Yellow
+ENTER
+STRING Get-LocalGroup | Out-File -FilePath "Groups.txt"
+ENTER
+DELAY 2000
+
+STRING Write-Host "Collecting Administrator Group Members..." -ForegroundColor Yellow
+ENTER
+STRING Get-LocalGroupMember -Group "Administrators" | Out-File -FilePath "AdminMembers.txt"
+ENTER
+DELAY 2000
+
+REM Network Configuration Audit
+STRING Write-Host "Auditing Network Configuration..." -ForegroundColor Yellow
+ENTER
+STRING Get-NetAdapter | Where-Object {$_.Status -eq "Up"} | Out-File -FilePath "NetworkAdapters.txt"
+ENTER
+DELAY 2000
+
+STRING Get-NetFirewallProfile | Out-File -FilePath "FirewallProfiles.txt"
+ENTER
+DELAY 2000
+
+STRING netstat -an | Out-File -FilePath "NetworkConnections.txt"
+ENTER
+DELAY 3000
+
+REM Service Audit
+STRING Write-Host "Auditing Running Services..." -ForegroundColor Yellow
+ENTER
+STRING Get-Service | Where-Object {$_.Status -eq "Running"} | Sort-Object Name | Out-File -FilePath "RunningServices.txt"
+ENTER
+DELAY 3000
+
+REM Process Audit
+STRING Write-Host "Auditing Running Processes..." -ForegroundColor Yellow
+ENTER
+STRING Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 | Out-File -FilePath "TopProcesses.txt"
+ENTER
+DELAY 2000
+
+REM Installed Software Audit
+STRING Write-Host "Auditing Installed Software..." -ForegroundColor Yellow
+ENTER
+STRING Get-WmiObject -Class Win32_Product | Select-Object Name,Version,Vendor | Sort-Object Name | Out-File -FilePath "InstalledSoftware.txt"
+ENTER
+DELAY 10000
+
+REM Security Settings Audit
+STRING Write-Host "Checking Security Policies..." -ForegroundColor Yellow
+ENTER
+STRING secedit /export /cfg "SecurityPolicy.inf"
+ENTER
+DELAY 5000
+
+REM Windows Update Status
+STRING Write-Host "Checking Windows Update Status..." -ForegroundColor Yellow
+ENTER
+STRING Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10 | Out-File -FilePath "RecentUpdates.txt"
+ENTER
+DELAY 3000
+
+REM Registry Security Check
+STRING Write-Host "Performing Registry Security Checks..." -ForegroundColor Yellow
+ENTER
+
+REM Check UAC Settings
+STRING $uac = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -ErrorAction SilentlyContinue
+ENTER
+STRING "UAC Status: $($uac.EnableLUA)" | Out-File -FilePath "SecuritySettings.txt"
+ENTER
+
+REM Check Remote Desktop
+STRING $rdp = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -ErrorAction SilentlyContinue
+ENTER
+STRING "RDP Disabled: $($rdp.fDenyTSConnections)" | Out-File -Append -FilePath "SecuritySettings.txt"
+ENTER
+
+REM Check Windows Defender Status
+STRING Get-MpComputerStatus | Select-Object AntivirusEnabled,RealTimeProtectionEnabled,BehaviorMonitorEnabled | Out-File -Append -FilePath "SecuritySettings.txt"
+ENTER
+DELAY 2000
+
+REM Apply Basic Hardening
+STRING Write-Host "Applying Basic Security Hardening..." -ForegroundColor Red
+ENTER
+
+REM Enable Windows Firewall for all profiles
+STRING Write-Host "Enabling Windows Firewall..." -ForegroundColor Yellow
+ENTER
+STRING Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+ENTER
+DELAY 2000
+
+REM Disable unnecessary services (be careful with this)
+STRING Write-Host "Disabling Telnet service if present..." -ForegroundColor Yellow
+ENTER
+STRING Get-Service -Name "TlntSvr" -ErrorAction SilentlyContinue | Stop-Service -Force -ErrorAction SilentlyContinue
+ENTER
+STRING Set-Service -Name "TlntSvr" -StartupType Disabled -ErrorAction SilentlyContinue
+ENTER
+DELAY 1000
+
+REM Disable Print Spooler (if not needed)
+STRING Write-Host "WARNING: Disabling Print Spooler service..." -ForegroundColor Red
+ENTER
+STRING $choice = Read-Host "Disable Print Spooler? (y/N)"
+ENTER
+STRING if ($choice -eq "y" -or $choice -eq "Y") {
+ENTER
+STRING   Stop-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+ENTER
+STRING   Set-Service -Name "Spooler" -StartupType Disabled -ErrorAction SilentlyContinue
+ENTER
+STRING   Write-Host "Print Spooler disabled" -ForegroundColor Green
+ENTER
+STRING }
+ENTER
+
+REM Enable Windows Defender Real-time Protection
+STRING Write-Host "Ensuring Windows Defender is enabled..." -ForegroundColor Yellow
+ENTER
+STRING Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction SilentlyContinue
+ENTER
+STRING Update-MpSignature -ErrorAction SilentlyContinue
+ENTER
+DELAY 10000
+
+REM Configure Windows Update
+STRING Write-Host "Configuring Windows Update..." -ForegroundColor Yellow
+ENTER
+STRING $wu = New-Object -ComObject Microsoft.Update.AutoUpdate
+ENTER
+STRING $wu.EnableService()
+ENTER
+
+REM Set strong password policy (requires domain environment)
+STRING Write-Host "Setting password complexity requirements..." -ForegroundColor Yellow
+ENTER
+STRING net accounts /minpwlen:8 /maxpwage:90 /minpwage:1 /uniquepw:5
+ENTER
+DELAY 1000
+
+REM Disable Guest Account
+STRING Write-Host "Disabling Guest Account..." -ForegroundColor Yellow
+ENTER
+STRING net user Guest /active:no
+ENTER
+DELAY 1000
+
+REM Set account lockout policy
+STRING Write-Host "Setting account lockout policy..." -ForegroundColor Yellow
+ENTER
+STRING net accounts /lockoutthreshold:5 /lockoutduration:30 /lockoutwindow:30
+ENTER
+DELAY 1000
+
+REM Registry Hardening
+STRING Write-Host "Applying Registry Hardening..." -ForegroundColor Yellow
+ENTER
+
+REM Disable NetBIOS over TCP/IP (helps prevent some attacks)
+STRING New-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces" -Force -ErrorAction SilentlyContinue
+ENTER
+
+REM Disable SMBv1
+STRING Write-Host "Disabling SMBv1..." -ForegroundColor Yellow
+ENTER
+STRING Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart -ErrorAction SilentlyContinue
+ENTER
+DELAY 2000
+
+REM Generate Summary Report
+STRING Write-Host "Generating Security Audit Summary..." -ForegroundColor Green
+ENTER
+STRING $summary = @"
+ENTER
+STRING Windows Security Audit Summary
+ENTER
+STRING =====================================
+ENTER
+STRING Audit Date: $(Get-Date)
+ENTER
+STRING Computer Name: $env:COMPUTERNAME
+ENTER
+STRING Domain: $env:USERDOMAIN
+ENTER
+STRING Current User: $env:USERNAME
+ENTER
+STRING 
+ENTER
+STRING Files Generated:
+ENTER
+STRING - SystemInfo.txt (System Information)
+ENTER
+STRING - Users.txt (Local Users)
+ENTER
+STRING - Groups.txt (Local Groups)
+ENTER
+STRING - AdminMembers.txt (Administrator Group Members)
+ENTER
+STRING - NetworkAdapters.txt (Network Configuration)
+ENTER
+STRING - FirewallProfiles.txt (Firewall Status)
+ENTER
+STRING - NetworkConnections.txt (Network Connections)
+ENTER
+STRING - RunningServices.txt (Running Services)
+ENTER
+STRING - TopProcesses.txt (Top Processes)
+ENTER
+STRING - InstalledSoftware.txt (Installed Software)
+ENTER
+STRING - SecurityPolicy.inf (Security Policy Export)
+ENTER
+STRING - RecentUpdates.txt (Recent Windows Updates)
+ENTER
+STRING - SecuritySettings.txt (Security Configuration)
+ENTER
+STRING 
+ENTER
+STRING Hardening Applied:
+ENTER
+STRING - Windows Firewall enabled for all profiles
+ENTER
+STRING - Windows Defender real-time protection enabled
+ENTER
+STRING - Guest account disabled
+ENTER
+STRING - Password policy strengthened
+ENTER
+STRING - Account lockout policy configured
+ENTER
+STRING - SMBv1 protocol disabled
+ENTER
+STRING - Telnet service disabled (if present)
+ENTER
+STRING 
+ENTER
+STRING NEXT STEPS:
+ENTER
+STRING 1. Review all generated files
+ENTER
+STRING 2. Verify hardening changes
+ENTER
+STRING 3. Test system functionality
+ENTER
+STRING 4. Apply additional security measures as needed
+ENTER
+STRING 5. Schedule regular security audits
+ENTER
+STRING "@
+ENTER
+STRING $summary | Out-File -FilePath "SecurityAuditSummary.txt"
+ENTER
+
+STRING Write-Host $summary -ForegroundColor Cyan
+ENTER
+
+STRING Write-Host "Security Audit Complete! Check C:\SecurityAudit folder for detailed reports." -ForegroundColor Green
+ENTER
+STRING Write-Host "Please review all changes and test system functionality." -ForegroundColor Yellow
+ENTER
+
+REM Open the audit folder
+STRING explorer C:\SecurityAudit
+ENTER
+
+DELAY 2000

@@ -1,0 +1,455 @@
+REM System Diagnostics and Performance Monitor
+REM This payload performs comprehensive system diagnostics and performance analysis
+REM Author: MHC Project
+REM Version: 1.0
+
+DELAY 2000
+
+REM Open PowerShell as Administrator
+GUI r
+DELAY 500
+STRING powershell
+DELAY 500
+CTRL SHIFT ENTER
+DELAY 2000
+ALT y
+DELAY 2000
+
+REM Display diagnostics banner
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "    SYSTEM DIAGNOSTICS & MONITORING" -ForegroundColor Green
+ENTER
+STRING Write-Host "    Comprehensive Health Check" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+DELAY 2000
+
+REM Create diagnostics directory
+STRING $diagDir = "C:\SystemDiagnostics_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+ENTER
+STRING New-Item -ItemType Directory -Path $diagDir -Force
+ENTER
+STRING cd $diagDir
+ENTER
+
+REM System Overview
+STRING Write-Host "Gathering System Overview..." -ForegroundColor Yellow
+ENTER
+STRING $sysInfo = Get-ComputerInfo
+ENTER
+STRING Write-Host "Computer: $($sysInfo.CsName)" -ForegroundColor Green
+ENTER
+STRING Write-Host "OS: $($sysInfo.WindowsProductName) $($sysInfo.WindowsVersion)" -ForegroundColor Green
+ENTER
+STRING Write-Host "RAM: $([math]::Round($sysInfo.TotalPhysicalMemory/1GB,2)) GB" -ForegroundColor Green
+ENTER
+STRING Write-Host "CPU: $($sysInfo.CsProcessors[0].Name)" -ForegroundColor Green
+ENTER
+
+REM CPU Performance Analysis
+STRING Write-Host "Analyzing CPU Performance..." -ForegroundColor Yellow
+ENTER
+STRING $cpuSamples = @()
+ENTER
+STRING for ($i = 1; $i -le 10; $i++) {
+ENTER
+STRING   $cpu = Get-Counter "\Processor(_Total)\% Processor Time" | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue
+ENTER
+STRING   $cpuSamples += [math]::Round($cpu, 2)
+ENTER
+STRING   Write-Host "CPU Sample $i: $([math]::Round($cpu, 2))%" -ForegroundColor White
+ENTER
+STRING   Start-Sleep -Seconds 2
+ENTER
+STRING }
+ENTER
+DELAY 25000
+
+STRING $avgCPU = [math]::Round(($cpuSamples | Measure-Object -Average).Average, 2)
+ENTER
+STRING $maxCPU = ($cpuSamples | Measure-Object -Maximum).Maximum
+ENTER
+STRING Write-Host "Average CPU Usage: $avgCPU%" -ForegroundColor $(if($avgCPU -gt 80) { "Red" } elseif($avgCPU -gt 60) { "Yellow" } else { "Green" })
+ENTER
+STRING Write-Host "Peak CPU Usage: $maxCPU%" -ForegroundColor $(if($maxCPU -gt 90) { "Red" } elseif($maxCPU -gt 70) { "Yellow" } else { "Green" })
+ENTER
+
+REM Memory Analysis
+STRING Write-Host "Analyzing Memory Usage..." -ForegroundColor Yellow
+ENTER
+STRING $mem = Get-Counter "\Memory\Available MBytes"
+ENTER
+STRING $availMem = $mem.CounterSamples[0].CookedValue
+ENTER
+STRING $totalMem = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1MB)
+ENTER
+STRING $usedMem = $totalMem - $availMem
+ENTER
+STRING $memPercent = [math]::Round(($usedMem/$totalMem)*100, 2)
+ENTER
+STRING Write-Host "Total Memory: $totalMem MB" -ForegroundColor White
+ENTER
+STRING Write-Host "Available Memory: $availMem MB" -ForegroundColor White
+ENTER
+STRING Write-Host "Used Memory: $usedMem MB ($memPercent%)" -ForegroundColor $(if($memPercent -gt 85) { "Red" } elseif($memPercent -gt 70) { "Yellow" } else { "Green" })
+ENTER
+
+REM Disk Analysis
+STRING Write-Host "Analyzing Disk Usage..." -ForegroundColor Yellow
+ENTER
+STRING $disks = Get-WmiObject -Class Win32_LogicalDisk | Where-Object {$_.DriveType -eq 3}
+ENTER
+STRING foreach ($disk in $disks) {
+ENTER
+STRING   $freeSpace = [math]::Round($disk.FreeSpace/1GB, 2)
+ENTER
+STRING   $totalSpace = [math]::Round($disk.Size/1GB, 2)
+ENTER
+STRING   $usedPercent = [math]::Round((($totalSpace - $freeSpace)/$totalSpace)*100, 2)
+ENTER
+STRING   $color = if($usedPercent -gt 90) { "Red" } elseif($usedPercent -gt 80) { "Yellow" } else { "Green" }
+ENTER
+STRING   Write-Host "Drive $($disk.DeviceID) - Total: $totalSpace GB, Free: $freeSpace GB, Used: $usedPercent%" -ForegroundColor $color
+ENTER
+STRING }
+ENTER
+DELAY 3000
+
+REM Network Performance
+STRING Write-Host "Testing Network Performance..." -ForegroundColor Yellow
+ENTER
+STRING $networkTests = @("8.8.8.8", "1.1.1.1", "google.com")
+ENTER
+STRING foreach ($target in $networkTests) {
+ENTER
+STRING   $ping = Test-Connection -ComputerName $target -Count 4 -ErrorAction SilentlyContinue
+ENTER
+STRING   if ($ping) {
+ENTER
+STRING     $avgLatency = [math]::Round(($ping | Measure-Object ResponseTime -Average).Average, 2)
+ENTER
+STRING     Write-Host "$target - Average Latency: $avgLatency ms" -ForegroundColor Green
+ENTER
+STRING   } else {
+ENTER
+STRING     Write-Host "$target - Connection Failed" -ForegroundColor Red
+ENTER
+STRING   }
+ENTER
+STRING }
+ENTER
+DELAY 10000
+
+REM Top Resource-Consuming Processes
+STRING Write-Host "Identifying Resource-Heavy Processes..." -ForegroundColor Yellow
+ENTER
+STRING $topCPU = Get-Process | Sort-Object CPU -Descending | Select-Object -First 5
+ENTER
+STRING Write-Host "Top CPU Consumers:" -ForegroundColor White
+ENTER
+STRING $topCPU | Format-Table Name, CPU, WorkingSet -AutoSize | Out-String | Write-Host
+ENTER
+
+STRING $topMemory = Get-Process | Sort-Object WorkingSet -Descending | Select-Object -First 5
+ENTER
+STRING Write-Host "Top Memory Consumers:" -ForegroundColor White
+ENTER
+STRING $topMemory | Format-Table Name, @{Name="Memory(MB)";Expression={[math]::Round($_.WorkingSet/1MB,2)}}, CPU -AutoSize | Out-String | Write-Host
+ENTER
+
+REM Service Status Check
+STRING Write-Host "Checking Critical Services..." -ForegroundColor Yellow
+ENTER
+STRING $criticalServices = @("Spooler", "BITS", "Themes", "AudioSrv", "Dhcp", "Dnscache", "EventLog", "PlugPlay", "RpcSs", "Winmgmt")
+ENTER
+STRING foreach ($service in $criticalServices) {
+ENTER
+STRING   $svc = Get-Service -Name $service -ErrorAction SilentlyContinue
+ENTER
+STRING   if ($svc) {
+ENTER
+STRING     $color = if($svc.Status -eq "Running") { "Green" } else { "Red" }
+ENTER
+STRING     Write-Host "$($svc.Name): $($svc.Status)" -ForegroundColor $color
+ENTER
+STRING   }
+ENTER
+STRING }
+ENTER
+DELAY 2000
+
+REM Event Log Error Check
+STRING Write-Host "Checking Recent System Errors..." -ForegroundColor Yellow
+ENTER
+STRING $systemErrors = Get-EventLog -LogName System -EntryType Error -Newest 5 -ErrorAction SilentlyContinue
+ENTER
+STRING if ($systemErrors) {
+ENTER
+STRING   Write-Host "Recent System Errors Found:" -ForegroundColor Red
+ENTER
+STRING   foreach ($error in $systemErrors) {
+ENTER
+STRING     Write-Host "[$($error.TimeGenerated)] $($error.Source): $($error.Message.Substring(0, [Math]::Min(100, $error.Message.Length)))" -ForegroundColor Yellow
+ENTER
+STRING   }
+ENTER
+STRING } else {
+ENTER
+STRING   Write-Host "No recent system errors found." -ForegroundColor Green
+ENTER
+STRING }
+ENTER
+
+REM Windows Update Status
+STRING Write-Host "Checking Windows Update Status..." -ForegroundColor Yellow
+ENTER
+STRING $lastUpdate = Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1
+ENTER
+STRING if ($lastUpdate) {
+ENTER
+STRING   $daysSinceUpdate = (Get-Date) - $lastUpdate.InstalledOn
+ENTER
+STRING   Write-Host "Last Update: $($lastUpdate.HotFixID) installed on $($lastUpdate.InstalledOn)" -ForegroundColor White
+ENTER
+STRING   if ($daysSinceUpdate.Days -gt 30) {
+ENTER
+STRING     Write-Host "WARNING: System may need updates (last update $($daysSinceUpdate.Days) days ago)" -ForegroundColor Red
+ENTER
+STRING   } else {
+ENTER
+STRING     Write-Host "Update status: Recent ($($daysSinceUpdate.Days) days ago)" -ForegroundColor Green
+ENTER
+STRING   }
+ENTER
+STRING }
+ENTER
+DELAY 2000
+
+REM Antivirus Status
+STRING Write-Host "Checking Antivirus Status..." -ForegroundColor Yellow
+ENTER
+STRING try {
+ENTER
+STRING   $avStatus = Get-MpComputerStatus -ErrorAction SilentlyContinue
+ENTER
+STRING   if ($avStatus) {
+ENTER
+STRING     Write-Host "Windows Defender Status:" -ForegroundColor White
+ENTER
+STRING     Write-Host "  Antivirus Enabled: $($avStatus.AntivirusEnabled)" -ForegroundColor $(if($avStatus.AntivirusEnabled) { "Green" } else { "Red" })
+ENTER
+STRING     Write-Host "  Real-time Protection: $($avStatus.RealTimeProtectionEnabled)" -ForegroundColor $(if($avStatus.RealTimeProtectionEnabled) { "Green" } else { "Red" })
+ENTER
+STRING     Write-Host "  Quick Scan Age: $($avStatus.QuickScanAge) days" -ForegroundColor $(if($avStatus.QuickScanAge -gt 7) { "Yellow" } else { "Green" })
+ENTER
+STRING   }
+ENTER
+STRING } catch {
+ENTER
+STRING   Write-Host "Unable to check Windows Defender status" -ForegroundColor Yellow
+ENTER
+STRING }
+ENTER
+DELAY 2000
+
+REM Temperature Check (if available)
+STRING Write-Host "Checking System Temperature..." -ForegroundColor Yellow
+ENTER
+STRING try {
+ENTER
+STRING   $temp = Get-WmiObject -Namespace "root/OpenHardwareMonitor" -Class Sensor | Where-Object {$_.SensorType -eq "Temperature"}
+ENTER
+STRING   if ($temp) {
+ENTER
+STRING     foreach ($sensor in $temp) {
+ENTER
+STRING       Write-Host "$($sensor.Name): $($sensor.Value)°C" -ForegroundColor $(if($sensor.Value -gt 80) { "Red" } elseif($sensor.Value -gt 70) { "Yellow" } else { "Green" })
+ENTER
+STRING     }
+ENTER
+STRING   } else {
+ENTER
+STRING     Write-Host "Temperature sensors not accessible" -ForegroundColor Yellow
+ENTER
+STRING   }
+ENTER
+STRING } catch {
+ENTER
+STRING   Write-Host "Temperature monitoring not available" -ForegroundColor Yellow
+ENTER
+STRING }
+ENTER
+
+REM Generate Detailed Report
+STRING Write-Host "Generating Detailed Report..." -ForegroundColor Yellow
+ENTER
+STRING $report = @"
+ENTER
+STRING SYSTEM DIAGNOSTICS REPORT
+ENTER
+STRING ===============================
+ENTER
+STRING Generated: $(Get-Date)
+ENTER
+STRING Computer: $env:COMPUTERNAME
+ENTER
+STRING User: $env:USERNAME
+ENTER
+STRING 
+ENTER
+STRING PERFORMANCE SUMMARY:
+ENTER
+STRING - Average CPU Usage: $avgCPU%
+ENTER
+STRING - Peak CPU Usage: $maxCPU%
+ENTER
+STRING - Memory Usage: $memPercent% ($usedMem MB used of $totalMem MB)
+ENTER
+STRING - Available Memory: $availMem MB
+ENTER
+STRING 
+ENTER
+STRING SYSTEM HEALTH:
+ENTER
+STRING $(if($avgCPU -lt 70) { "✓ CPU Performance: GOOD" } else { "⚠ CPU Performance: HIGH USAGE" })
+ENTER
+STRING $(if($memPercent -lt 80) { "✓ Memory Usage: GOOD" } else { "⚠ Memory Usage: HIGH" })
+ENTER
+STRING $(if($systemErrors.Count -eq 0) { "✓ System Errors: NONE" } else { "⚠ System Errors: $($systemErrors.Count) recent errors" })
+ENTER
+STRING 
+ENTER
+STRING RECOMMENDATIONS:
+ENTER
+STRING $(if($avgCPU -gt 80) { "- Investigate high CPU usage processes" } else { "" })
+ENTER
+STRING $(if($memPercent -gt 85) { "- Consider upgrading RAM or closing applications" } else { "" })
+ENTER
+STRING $(if($daysSinceUpdate.Days -gt 30) { "- Install pending Windows updates" } else { "" })
+ENTER
+STRING $(if($systemErrors.Count -gt 0) { "- Review system event logs for errors" } else { "" })
+ENTER
+STRING 
+ENTER
+STRING For detailed analysis, review the generated log files.
+ENTER
+STRING "@
+ENTER
+
+STRING $report | Out-File -FilePath "DiagnosticsReport.txt"
+ENTER
+STRING Write-Host $report -ForegroundColor Cyan
+ENTER
+
+REM Save detailed data to files
+STRING Write-Host "Saving detailed diagnostic data..." -ForegroundColor Yellow
+ENTER
+STRING Get-ComputerInfo | Out-File -FilePath "SystemInfo.txt"
+ENTER
+STRING Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 | Out-File -FilePath "TopProcesses.txt"
+ENTER
+STRING Get-Service | Sort-Object Status, Name | Out-File -FilePath "ServiceStatus.txt"
+ENTER
+STRING Get-EventLog -LogName System -EntryType Error -Newest 20 | Out-File -FilePath "SystemErrors.txt"
+ENTER
+STRING Get-WmiObject -Class Win32_LogicalDisk | Out-File -FilePath "DiskInfo.txt"
+ENTER
+STRING Get-HotFix | Sort-Object InstalledOn -Descending | Out-File -FilePath "InstalledUpdates.txt"
+ENTER
+
+REM Performance monitoring script
+STRING Write-Host "Creating Performance Monitor Script..." -ForegroundColor Yellow
+ENTER
+STRING @"
+ENTER
+STRING # Performance Monitor Script
+ENTER
+STRING # Run this script to continuously monitor system performance
+ENTER
+STRING 
+ENTER
+STRING while ($true) {
+ENTER
+STRING   Clear-Host
+ENTER
+STRING   Write-Host "=== LIVE PERFORMANCE MONITOR ===" -ForegroundColor Cyan
+ENTER
+STRING   Write-Host "Press Ctrl+C to exit" -ForegroundColor Yellow
+ENTER
+STRING   Write-Host ""
+ENTER
+STRING   
+ENTER
+STRING   # CPU Usage
+ENTER
+STRING   $cpu = Get-Counter "\Processor(_Total)\% Processor Time" | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue
+ENTER
+STRING   Write-Host "CPU Usage: $([math]::Round($cpu, 1))%" -ForegroundColor $(if($cpu -gt 80) { "Red" } elseif($cpu -gt 60) { "Yellow" } else { "Green" })
+ENTER
+STRING   
+ENTER
+STRING   # Memory Usage
+ENTER
+STRING   $mem = Get-Counter "\Memory\Available MBytes"
+ENTER
+STRING   $availMem = $mem.CounterSamples[0].CookedValue
+ENTER
+STRING   $totalMem = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1MB)
+ENTER
+STRING   $memPercent = [math]::Round((($totalMem - $availMem)/$totalMem)*100, 1)
+ENTER
+STRING   Write-Host "Memory Usage: $memPercent% ($(($totalMem - $availMem)) MB used)" -ForegroundColor $(if($memPercent -gt 85) { "Red" } elseif($memPercent -gt 70) { "Yellow" } else { "Green" })
+ENTER
+STRING   
+ENTER
+STRING   # Top Processes
+ENTER
+STRING   Write-Host "`nTop CPU Processes:" -ForegroundColor White
+ENTER
+STRING   Get-Process | Sort-Object CPU -Descending | Select-Object -First 5 | Format-Table Name, CPU, @{Name="Memory(MB)";Expression={[math]::Round($_.WorkingSet/1MB,2)}} -AutoSize
+ENTER
+STRING   
+ENTER
+STRING   Start-Sleep -Seconds 3
+ENTER
+STRING }
+ENTER
+STRING "@ | Out-File -FilePath "LiveMonitor.ps1"
+ENTER
+
+STRING Write-Host "========================================" -ForegroundColor Green
+ENTER
+STRING Write-Host "    DIAGNOSTICS COMPLETE!" -ForegroundColor Green
+ENTER
+STRING Write-Host "========================================" -ForegroundColor Green
+ENTER
+STRING Write-Host "Results saved to: $diagDir" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "" -ForegroundColor White
+ENTER
+STRING Write-Host "Files generated:" -ForegroundColor White
+ENTER
+STRING Write-Host "- DiagnosticsReport.txt (Summary)" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "- SystemInfo.txt (Detailed system info)" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "- TopProcesses.txt (Resource usage)" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "- ServiceStatus.txt (Service states)" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "- SystemErrors.txt (Recent errors)" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "- LiveMonitor.ps1 (Real-time monitor)" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "" -ForegroundColor White
+ENTER
+STRING Write-Host "Run './LiveMonitor.ps1' for continuous monitoring" -ForegroundColor Green
+ENTER
+
+REM Open the diagnostics folder
+STRING explorer $diagDir
+ENTER
+
+DELAY 2000

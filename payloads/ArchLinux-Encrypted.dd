@@ -1,0 +1,219 @@
+REM Advanced Arch Linux Installation with LUKS Encryption and i3WM
+REM This payload installs Arch Linux with full disk encryption, i3 window manager
+REM Author: MHC Project
+REM Version: 2.0
+
+DELAY 2000
+REM Boot from Arch Linux USB - assumes we're already in live environment
+
+REM Connect to WiFi (uncomment and modify if needed)
+REM GUI r
+REM DELAY 500
+REM STRING iwctl
+REM ENTER
+REM DELAY 1000
+REM STRING station wlan0 connect YourWiFiName
+REM ENTER
+REM DELAY 2000
+REM STRING YourWiFiPassword
+REM ENTER
+REM DELAY 3000
+REM STRING exit
+REM ENTER
+
+REM Update system clock
+STRING timedatectl set-ntp true
+ENTER
+DELAY 1000
+
+REM List disks to verify target
+STRING lsblk
+ENTER
+DELAY 2000
+
+REM Partition the disk (assumes /dev/sda)
+REM Create GPT partition table
+STRING sgdisk --zap-all /dev/sda
+ENTER
+DELAY 1000
+
+REM Create EFI boot partition (512MB)
+STRING sgdisk --new=1:0:+512M --typecode=1:ef00 --change-name=1:"EFI System" /dev/sda
+ENTER
+DELAY 500
+
+REM Create root partition (rest of disk)
+STRING sgdisk --new=2:0:0 --typecode=2:8300 --change-name=2:"Linux Root" /dev/sda
+ENTER
+DELAY 500
+
+REM Verify partitions
+STRING lsblk /dev/sda
+ENTER
+DELAY 2000
+
+REM Format EFI partition
+STRING mkfs.fat -F32 /dev/sda1
+ENTER
+DELAY 1000
+
+REM Setup LUKS encryption on root partition
+STRING cryptsetup luksFormat /dev/sda2
+ENTER
+DELAY 2000
+STRING YES
+ENTER
+DELAY 1000
+STRING archlinux
+ENTER
+DELAY 2000
+STRING archlinux
+ENTER
+DELAY 3000
+
+REM Open encrypted partition
+STRING cryptsetup open /dev/sda2 cryptroot
+ENTER
+DELAY 2000
+STRING archlinux
+ENTER
+DELAY 2000
+
+REM Format encrypted root partition
+STRING mkfs.ext4 /dev/mapper/cryptroot
+ENTER
+DELAY 5000
+
+REM Mount filesystems
+STRING mount /dev/mapper/cryptroot /mnt
+ENTER
+DELAY 500
+STRING mkdir -p /mnt/boot/efi
+ENTER
+STRING mount /dev/sda1 /mnt/boot/efi
+ENTER
+DELAY 500
+
+REM Update mirrorlist for faster downloads
+STRING reflector --country US,GB,DE --latest 10 --sort rate --save /etc/pacman.d/mirrorlist
+ENTER
+DELAY 10000
+
+REM Install base system
+STRING pacstrap /mnt base linux linux-firmware base-devel intel-ucode networkmanager grub efibootmgr
+ENTER
+DELAY 60000
+
+REM Generate fstab
+STRING genfstab -U /mnt >> /mnt/etc/fstab
+ENTER
+DELAY 1000
+
+REM Chroot into new system
+STRING arch-chroot /mnt
+ENTER
+DELAY 2000
+
+REM Set timezone
+STRING ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
+ENTER
+STRING hwclock --systohc
+ENTER
+
+REM Configure localization
+STRING sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+ENTER
+STRING locale-gen
+ENTER
+DELAY 2000
+STRING echo "LANG=en_US.UTF-8" > /etc/locale.conf
+ENTER
+
+REM Set hostname
+STRING echo "archlinux-encrypted" > /etc/hostname
+ENTER
+
+REM Configure hosts file
+STRING echo "127.0.0.1 localhost" >> /etc/hosts
+ENTER
+STRING echo "::1 localhost" >> /etc/hosts
+ENTER
+STRING echo "127.0.1.1 archlinux-encrypted.localdomain archlinux-encrypted" >> /etc/hosts
+ENTER
+
+REM Set root password
+STRING passwd
+ENTER
+DELAY 1000
+STRING root123
+ENTER
+STRING root123
+ENTER
+DELAY 1000
+
+REM Create user
+STRING useradd -m -G wheel,audio,video,optical,storage -s /bin/bash user
+ENTER
+STRING passwd user
+ENTER
+DELAY 1000
+STRING user123
+ENTER
+STRING user123
+ENTER
+DELAY 1000
+
+REM Configure sudo
+STRING sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+ENTER
+
+REM Configure mkinitcpio for encryption
+STRING sed -i 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck)/HOOKS=(base udev autodetect keyboard keymap modconf block encrypt filesystems fsck)/' /etc/mkinitcpio.conf
+ENTER
+STRING mkinitcpio -p linux
+ENTER
+DELAY 10000
+
+REM Install and configure GRUB
+STRING grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+ENTER
+DELAY 2000
+
+REM Get UUID of encrypted partition
+STRING echo "GRUB_CMDLINE_LINUX=\"cryptdevice=/dev/sda2:cryptroot root=/dev/mapper/cryptroot\"" >> /etc/default/grub
+ENTER
+STRING grub-mkconfig -o /boot/grub/grub.cfg
+ENTER
+DELAY 5000
+
+REM Install i3 window manager and essential packages
+STRING pacman -S --noconfirm xorg-server xorg-xinit i3-wm i3status i3lock dmenu firefox alacritty thunar
+ENTER
+DELAY 30000
+
+REM Enable NetworkManager
+STRING systemctl enable NetworkManager
+ENTER
+
+REM Configure i3 for user
+STRING su - user -c "mkdir -p ~/.config/i3"
+ENTER
+STRING su - user -c "echo 'exec i3' > ~/.xinitrc"
+ENTER
+
+REM Exit chroot
+STRING exit
+ENTER
+
+REM Unmount and reboot
+STRING umount -R /mnt
+ENTER
+DELAY 2000
+STRING cryptsetup close cryptroot
+ENTER
+STRING reboot
+ENTER
+
+REM Installation complete!
+REM Default passwords: root: root123, user: user123
+REM LUKS password: archlinux

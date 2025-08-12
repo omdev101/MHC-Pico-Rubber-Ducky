@@ -1,0 +1,496 @@
+REM System Forensics and Information Collection
+REM This payload performs comprehensive system forensics and data collection
+REM Author: MHC Project
+REM Version: 1.0
+REM WARNING: For authorized forensic analysis only!
+
+DELAY 2000
+
+REM Open PowerShell as Administrator
+GUI r
+DELAY 500
+STRING powershell
+DELAY 500
+CTRL SHIFT ENTER
+DELAY 2000
+ALT y
+DELAY 2000
+
+REM Set execution policy and create forensics directory
+STRING Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+ENTER
+DELAY 2000
+
+STRING $forensicsDir = "C:\Forensics_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+ENTER
+STRING New-Item -ItemType Directory -Path $forensicsDir -Force
+ENTER
+STRING cd $forensicsDir
+ENTER
+DELAY 1000
+
+REM Display forensics banner
+STRING Write-Host "========================================" -ForegroundColor Red
+ENTER
+STRING Write-Host "    SYSTEM FORENSICS COLLECTION" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "    For Authorized Analysis Only!" -ForegroundColor Red
+ENTER
+STRING Write-Host "========================================" -ForegroundColor Red
+ENTER
+DELAY 2000
+
+REM Start forensics log
+STRING $logFile = "ForensicsLog.txt"
+ENTER
+STRING "System Forensics Collection Started: $(Get-Date)" | Out-File -FilePath $logFile
+ENTER
+STRING "Target System: $env:COMPUTERNAME" | Out-File -Append -FilePath $logFile
+ENTER
+STRING "Collector: $env:USERNAME" | Out-File -Append -FilePath $logFile
+ENTER
+STRING "========================================" | Out-File -Append -FilePath $logFile
+ENTER
+
+REM System Information Collection
+STRING Write-Host "Collecting System Information..." -ForegroundColor Yellow
+ENTER
+STRING "=== SYSTEM INFORMATION ===" | Out-File -Append -FilePath $logFile
+ENTER
+
+STRING Get-ComputerInfo | Out-File -FilePath "01_SystemInfo.txt"
+ENTER
+DELAY 5000
+
+STRING systeminfo | Out-File -FilePath "02_SystemInfo_Raw.txt"
+ENTER
+DELAY 3000
+
+STRING Get-HotFix | Sort-Object InstalledOn -Descending | Out-File -FilePath "03_InstalledUpdates.txt"
+ENTER
+DELAY 2000
+
+REM User and Account Information
+STRING Write-Host "Collecting User Account Information..." -ForegroundColor Yellow
+ENTER
+STRING Get-LocalUser | Select Name,Enabled,LastLogon,PasswordLastSet,PasswordRequired | Out-File -FilePath "04_LocalUsers.txt"
+ENTER
+DELAY 2000
+
+STRING Get-LocalGroup | Out-File -FilePath "05_LocalGroups.txt"
+ENTER
+STRING Get-LocalGroupMember -Group "Administrators" | Out-File -FilePath "06_AdminGroupMembers.txt"
+ENTER
+STRING whoami /all | Out-File -FilePath "07_CurrentUserDetails.txt"
+ENTER
+DELAY 2000
+
+REM Network Configuration and Activity
+STRING Write-Host "Collecting Network Information..." -ForegroundColor Yellow
+ENTER
+STRING ipconfig /all | Out-File -FilePath "08_NetworkConfig.txt"
+ENTER
+STRING route print | Out-File -FilePath "09_RoutingTable.txt"
+ENTER
+STRING arp -a | Out-File -FilePath "10_ARPTable.txt"
+ENTER
+STRING netstat -anob | Out-File -FilePath "11_NetworkConnections.txt"
+ENTER
+DELAY 5000
+
+STRING Get-NetAdapter | Out-File -FilePath "12_NetworkAdapters.txt"
+ENTER
+STRING Get-NetTCPConnection | Where-Object {$_.State -eq "Listen"} | Out-File -FilePath "13_ListeningPorts.txt"
+ENTER
+DELAY 2000
+
+REM DNS Cache and Network History
+STRING ipconfig /displaydns | Out-File -FilePath "14_DNSCache.txt"
+ENTER
+DELAY 2000
+
+REM Wireless Network Information
+STRING netsh wlan show profiles | Out-File -FilePath "15_WiFiProfiles.txt"
+ENTER
+STRING $wifiProfiles = netsh wlan show profiles | Select-String "All User Profile" | ForEach-Object { ($_ -split ":")[1].Trim() }
+ENTER
+STRING foreach ($profile in $wifiProfiles) {
+ENTER
+STRING   netsh wlan show profile name="$profile" key=clear | Out-File -Append -FilePath "16_WiFiDetails.txt"
+ENTER
+STRING   "===========================================" | Out-File -Append -FilePath "16_WiFiDetails.txt"
+ENTER
+STRING }
+ENTER
+DELAY 5000
+
+REM Process and Service Analysis
+STRING Write-Host "Analyzing Running Processes and Services..." -ForegroundColor Yellow
+ENTER
+STRING Get-Process | Sort-Object CPU -Descending | Select-Object -First 50 | Out-File -FilePath "17_RunningProcesses.txt"
+ENTER
+DELAY 2000
+
+STRING tasklist /svc | Out-File -FilePath "18_ProcessesWithServices.txt"
+ENTER
+STRING Get-Service | Sort-Object Status,Name | Out-File -FilePath "19_AllServices.txt"
+ENTER
+DELAY 3000
+
+REM Startup Programs and Scheduled Tasks
+STRING Get-CimInstance Win32_StartupCommand | Select-Object Name,Command,Location | Out-File -FilePath "20_StartupPrograms.txt"
+ENTER
+STRING Get-ScheduledTask | Where-Object {$_.State -eq "Ready"} | Out-File -FilePath "21_ScheduledTasks.txt"
+ENTER
+DELAY 3000
+
+REM Installed Software
+STRING Write-Host "Collecting Installed Software..." -ForegroundColor Yellow
+ENTER
+STRING Get-WmiObject -Class Win32_Product | Select-Object Name,Version,Vendor,InstallDate | Sort-Object Name | Out-File -FilePath "22_InstalledSoftware.txt"
+ENTER
+DELAY 15000
+
+STRING Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName,DisplayVersion,Publisher,InstallDate | Out-File -FilePath "23_InstalledPrograms_32bit.txt"
+ENTER
+STRING Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName,DisplayVersion,Publisher,InstallDate | Out-File -FilePath "24_InstalledPrograms_64bit.txt"
+ENTER
+DELAY 5000
+
+REM Browser History and Data (if accessible)
+STRING Write-Host "Collecting Browser Information..." -ForegroundColor Yellow
+ENTER
+STRING $chromeHistoryPath = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\History"
+ENTER
+STRING if (Test-Path $chromeHistoryPath) {
+ENTER
+STRING   Copy-Item $chromeHistoryPath -Destination "25_Chrome_History" -ErrorAction SilentlyContinue
+ENTER
+STRING }
+ENTER
+
+STRING $edgeHistoryPath = "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\History"
+ENTER
+STRING if (Test-Path $edgeHistoryPath) {
+ENTER
+STRING   Copy-Item $edgeHistoryPath -Destination "26_Edge_History" -ErrorAction SilentlyContinue
+ENTER
+STRING }
+ENTER
+DELAY 2000
+
+REM Registry Analysis
+STRING Write-Host "Collecting Registry Information..." -ForegroundColor Yellow
+ENTER
+STRING reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" | Out-File -FilePath "27_Registry_Run_HKLM.txt"
+ENTER
+STRING reg query "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" | Out-File -FilePath "28_Registry_Run_HKCU.txt"
+ENTER
+STRING reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" | Out-File -FilePath "29_Registry_RunOnce.txt"
+ENTER
+DELAY 2000
+
+STRING reg query "HKLM\SYSTEM\CurrentControlSet\Services" | Out-File -FilePath "30_Registry_Services.txt"
+ENTER
+DELAY 3000
+
+REM USB Device History
+STRING reg query "HKLM\SYSTEM\CurrentControlSet\Enum\USBSTOR" | Out-File -FilePath "31_USB_Devices.txt"
+ENTER
+DELAY 2000
+
+REM Event Log Analysis
+STRING Write-Host "Collecting Event Logs..." -ForegroundColor Yellow
+ENTER
+STRING Get-EventLog -LogName System -Newest 100 | Out-File -FilePath "32_System_EventLog.txt"
+ENTER
+STRING Get-EventLog -LogName Application -Newest 100 | Out-File -FilePath "33_Application_EventLog.txt"
+ENTER
+STRING Get-EventLog -LogName Security -Newest 50 | Out-File -FilePath "34_Security_EventLog.txt"
+ENTER
+DELAY 10000
+
+REM Logon Events
+STRING Get-WinEvent -FilterHashtable @{LogName='Security';ID=4624} -MaxEvents 50 | Out-File -FilePath "35_Successful_Logons.txt"
+ENTER
+STRING Get-WinEvent -FilterHashtable @{LogName='Security';ID=4625} -MaxEvents 50 | Out-File -FilePath "36_Failed_Logons.txt"
+ENTER
+DELAY 5000
+
+REM File System Information
+STRING Write-Host "Analyzing File System..." -ForegroundColor Yellow
+ENTER
+STRING Get-PSDrive | Out-File -FilePath "37_Drive_Information.txt"
+ENTER
+STRING Get-Volume | Out-File -FilePath "38_Volume_Information.txt"
+ENTER
+DELAY 2000
+
+REM Recent Files and Documents
+STRING Get-ChildItem "$env:USERPROFILE\Recent" | Select-Object Name,CreationTime,LastWriteTime | Out-File -FilePath "39_Recent_Files.txt"
+ENTER
+STRING Get-ChildItem "$env:USERPROFILE\Desktop" | Select-Object Name,CreationTime,LastWriteTime | Out-File -FilePath "40_Desktop_Files.txt"
+ENTER
+STRING Get-ChildItem "$env:USERPROFILE\Downloads" | Select-Object Name,CreationTime,LastWriteTime | Sort-Object LastWriteTime -Descending | Select-Object -First 50 | Out-File -FilePath "41_Recent_Downloads.txt"
+ENTER
+DELAY 2000
+
+REM Temp Files Analysis
+STRING Get-ChildItem "$env:TEMP" | Select-Object Name,CreationTime,LastWriteTime,Length | Sort-Object LastWriteTime -Descending | Select-Object -First 100 | Out-File -FilePath "42_Temp_Files.txt"
+ENTER
+DELAY 2000
+
+REM Prefetch Files (Windows performance data)
+STRING if (Test-Path "C:\Windows\Prefetch") {
+ENTER
+STRING   Get-ChildItem "C:\Windows\Prefetch\*.pf" | Select-Object Name,CreationTime,LastWriteTime | Sort-Object LastWriteTime -Descending | Out-File -FilePath "43_Prefetch_Files.txt"
+ENTER
+STRING }
+ENTER
+DELAY 2000
+
+REM Firewall Configuration
+STRING Write-Host "Collecting Security Configuration..." -ForegroundColor Yellow
+ENTER
+STRING Get-NetFirewallProfile | Out-File -FilePath "44_Firewall_Profiles.txt"
+ENTER
+STRING Get-NetFirewallRule | Where-Object {$_.Enabled -eq "True"} | Select-Object DisplayName,Direction,Action,Protocol | Out-File -FilePath "45_Firewall_Rules.txt"
+ENTER
+DELAY 3000
+
+REM Antivirus Status
+STRING Get-MpComputerStatus | Out-File -FilePath "46_Windows_Defender_Status.txt"
+ENTER
+STRING Get-MpThreatDetection | Out-File -FilePath "47_Threat_Detections.txt"
+ENTER
+DELAY 2000
+
+REM Cached Credentials and Certificates
+STRING cmdkey /list | Out-File -FilePath "48_Cached_Credentials.txt"
+ENTER
+STRING Get-ChildItem Cert:\CurrentUser\My | Out-File -FilePath "49_User_Certificates.txt"
+ENTER
+STRING Get-ChildItem Cert:\LocalMachine\My | Out-File -FilePath "50_Machine_Certificates.txt"
+ENTER
+DELAY 2000
+
+REM Environment Variables
+STRING Get-ChildItem Env: | Out-File -FilePath "51_Environment_Variables.txt"
+ENTER
+
+REM PowerShell History
+STRING if (Test-Path "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt") {
+ENTER
+STRING   Copy-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Destination "52_PowerShell_History.txt"
+ENTER
+STRING }
+ENTER
+DELAY 1000
+
+REM Generate Hash Values for Evidence Integrity
+STRING Write-Host "Generating File Hashes for Evidence Integrity..." -ForegroundColor Yellow
+ENTER
+STRING Get-ChildItem -File | ForEach-Object {
+ENTER
+STRING   $hash = Get-FileHash -Path $_.FullName -Algorithm SHA256
+ENTER
+STRING   "$($_.Name): $($hash.Hash)"
+ENTER
+STRING } | Out-File -FilePath "00_File_Hashes.txt"
+ENTER
+DELAY 5000
+
+REM Create Forensics Summary Report
+STRING Write-Host "Generating Forensics Summary Report..." -ForegroundColor Green
+ENTER
+STRING $summary = @"
+ENTER
+STRING SYSTEM FORENSICS COLLECTION REPORT
+ENTER
+STRING ========================================
+ENTER
+STRING Collection Date: $(Get-Date)
+ENTER
+STRING Target System: $env:COMPUTERNAME
+ENTER
+STRING Domain: $env:USERDOMAIN
+ENTER
+STRING Collector: $env:USERNAME
+ENTER
+STRING Evidence Directory: $forensicsDir
+ENTER
+STRING 
+ENTER
+STRING COLLECTED ARTIFACTS:
+ENTER
+STRING 
+ENTER
+STRING 1. SYSTEM INFORMATION
+ENTER
+STRING    - Complete system configuration and hardware details
+ENTER
+STRING    - Installed updates and patches
+ENTER
+STRING    - Operating system version and build information
+ENTER
+STRING 
+ENTER
+STRING 2. USER ACCOUNTS AND SECURITY
+ENTER
+STRING    - Local user accounts and group memberships
+ENTER
+STRING    - Current user privileges and permissions
+ENTER
+STRING    - Cached credentials and certificates
+ENTER
+STRING 
+ENTER
+STRING 3. NETWORK ANALYSIS
+ENTER
+STRING    - Network configuration and active connections
+ENTER
+STRING    - DNS cache and wireless network profiles
+ENTER
+STRING    - ARP table and routing information
+ENTER
+STRING 
+ENTER
+STRING 4. PROCESS AND SERVICE ANALYSIS
+ENTER
+STRING    - Running processes and associated services
+ENTER
+STRING    - Startup programs and scheduled tasks
+ENTER
+STRING    - Service configurations
+ENTER
+STRING 
+ENTER
+STRING 5. SOFTWARE INVENTORY
+ENTER
+STRING    - Complete list of installed software
+ENTER
+STRING    - Program installation dates and versions
+ENTER
+STRING    - Browser data and history (if accessible)
+ENTER
+STRING 
+ENTER
+STRING 6. REGISTRY ANALYSIS
+ENTER
+STRING    - Autorun locations and persistence mechanisms
+ENTER
+STRING    - Service configurations and USB device history
+ENTER
+STRING    - System and user registry keys
+ENTER
+STRING 
+ENTER
+STRING 7. EVENT LOG ANALYSIS
+ENTER
+STRING    - System, Application, and Security event logs
+ENTER
+STRING    - Logon/Logoff events and authentication records
+ENTER
+STRING    - Security-related events and alerts
+ENTER
+STRING 
+ENTER
+STRING 8. FILE SYSTEM ARTIFACTS
+ENTER
+STRING    - Recent files and user activity
+ENTER
+STRING    - Temporary files and prefetch data
+ENTER
+STRING    - File system structure and drive information
+ENTER
+STRING 
+ENTER
+STRING 9. SECURITY CONFIGURATION
+ENTER
+STRING    - Firewall settings and rules
+ENTER
+STRING    - Antivirus status and threat detections
+ENTER
+STRING    - Security policy configurations
+ENTER
+STRING 
+ENTER
+STRING 10. EVIDENCE INTEGRITY
+ENTER
+STRING     - SHA256 hashes of all collected files
+ENTER
+STRING     - Chain of custody documentation
+ENTER
+STRING     - Collection timestamps and metadata
+ENTER
+STRING 
+ENTER
+STRING ANALYSIS RECOMMENDATIONS:
+ENTER
+STRING 1. Verify file hashes to ensure evidence integrity
+ENTER
+STRING 2. Analyze event logs for suspicious activities
+ENTER
+STRING 3. Review network connections and processes
+ENTER
+STRING 4. Examine registry entries for persistence mechanisms
+ENTER
+STRING 5. Correlate timeline data across multiple artifacts
+ENTER
+STRING 6. Check for signs of data exfiltration or unauthorized access
+ENTER
+STRING 7. Validate user account activities and permissions
+ENTER
+STRING 8. Investigate any unusual software or network configurations
+ENTER
+STRING 
+ENTER
+STRING IMPORTANT NOTES:
+ENTER
+STRING - This collection was performed for authorized forensic analysis
+ENTER
+STRING - All timestamps are in local system time
+ENTER
+STRING - Some artifacts may require specialized tools for full analysis
+ENTER
+STRING - Maintain proper chain of custody for legal proceedings
+ENTER
+STRING - Consider additional volatile memory and disk imaging
+ENTER
+STRING 
+ENTER
+STRING Collection completed successfully at $(Get-Date)
+ENTER
+STRING Total files collected: $(Get-ChildItem -File | Measure-Object | Select-Object -ExpandProperty Count)
+ENTER
+STRING "@
+ENTER
+STRING $summary | Out-File -FilePath "99_Forensics_Summary_Report.txt"
+ENTER
+
+STRING Write-Host $summary -ForegroundColor Cyan
+ENTER
+
+STRING "Collection completed: $(Get-Date)" | Out-File -Append -FilePath $logFile
+ENTER
+
+STRING Write-Host "========================================" -ForegroundColor Green
+ENTER
+STRING Write-Host "    FORENSICS COLLECTION COMPLETE!" -ForegroundColor Green
+ENTER
+STRING Write-Host "========================================" -ForegroundColor Green
+ENTER
+STRING Write-Host "Evidence collected in: $forensicsDir" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "Total files: $(Get-ChildItem -File | Measure-Object | Select-Object -ExpandProperty Count)" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "Check 00_File_Hashes.txt for evidence integrity" -ForegroundColor Red
+ENTER
+STRING Write-Host "Review 99_Forensics_Summary_Report.txt for details" -ForegroundColor Red
+ENTER
+
+REM Open the forensics folder
+STRING explorer $forensicsDir
+ENTER
+
+DELAY 2000

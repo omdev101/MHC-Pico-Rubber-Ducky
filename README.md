@@ -111,8 +111,8 @@ Hold buttons during power-on for different modes:
 | Button Combination | Mode                    | Description                           |
 |-------------------|-------------------------|---------------------------------------|
 | None              | Normal Boot             | Standard operation with UI            |
-| GP4 Only          | Mass Storage Mode       | Access files, disable auto-execute   |
-| GP3 + GP4         | Safe Mode              | Enable mass storage, prevent execution|
+| GP4 Only          | Safe Mode               | Disable auto-execute   |
+| GP3 + GP4         | Mass Storage Mode       | Enable mass storage, prevent execution|
 
 ### Navigation
 - **UP/DOWN**: Navigate through menu items

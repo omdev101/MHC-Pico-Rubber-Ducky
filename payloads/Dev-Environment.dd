@@ -1,0 +1,642 @@
+REM Development Environment Setup
+REM This payload sets up a complete development environment with multiple languages
+REM Author: MHC Project  
+REM Version: 1.0
+
+DELAY 2000
+
+REM Open PowerShell as Administrator
+GUI r
+DELAY 500
+STRING powershell
+DELAY 500
+CTRL SHIFT ENTER
+DELAY 2000
+ALT y
+DELAY 2000
+
+REM Set execution policy
+STRING Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+ENTER
+DELAY 2000
+
+REM Display setup banner
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "    DEVELOPMENT ENVIRONMENT SETUP" -ForegroundColor Green
+ENTER
+STRING Write-Host "    Setting up complete dev stack" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+DELAY 2000
+
+REM Create development directories
+STRING Write-Host "Creating development directory structure..." -ForegroundColor Yellow
+ENTER
+STRING New-Item -ItemType Directory -Path "C:\Dev" -Force
+ENTER
+STRING New-Item -ItemType Directory -Path "C:\Dev\Projects" -Force
+ENTER
+STRING New-Item -ItemType Directory -Path "C:\Dev\Tools" -Force
+ENTER
+STRING New-Item -ItemType Directory -Path "C:\Dev\Scripts" -Force
+ENTER
+DELAY 1000
+
+REM Install Chocolatey package manager
+STRING Write-Host "Installing Chocolatey package manager..." -ForegroundColor Yellow
+ENTER
+STRING Set-ExecutionPolicy Bypass -Scope Process -Force
+ENTER
+STRING [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+ENTER
+STRING iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+ENTER
+DELAY 30000
+
+REM Refresh environment variables
+STRING $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+ENTER
+DELAY 2000
+
+REM Install essential development tools via Chocolatey
+STRING Write-Host "Installing essential development tools..." -ForegroundColor Yellow
+ENTER
+
+REM Git
+STRING Write-Host "Installing Git..." -ForegroundColor Green
+ENTER
+STRING choco install git -y
+ENTER
+DELAY 30000
+
+REM Visual Studio Code
+STRING Write-Host "Installing Visual Studio Code..." -ForegroundColor Green
+ENTER
+STRING choco install vscode -y
+ENTER
+DELAY 60000
+
+REM Node.js and npm
+STRING Write-Host "Installing Node.js..." -ForegroundColor Green
+ENTER
+STRING choco install nodejs -y
+ENTER
+DELAY 30000
+
+REM Python
+STRING Write-Host "Installing Python..." -ForegroundColor Green
+ENTER
+STRING choco install python -y
+ENTER
+DELAY 60000
+
+REM Java Development Kit
+STRING Write-Host "Installing OpenJDK..." -ForegroundColor Green
+ENTER
+STRING choco install openjdk -y
+ENTER
+DELAY 60000
+
+REM Docker Desktop
+STRING Write-Host "Installing Docker Desktop..." -ForegroundColor Green
+ENTER
+STRING choco install docker-desktop -y
+ENTER
+DELAY 120000
+
+REM Additional useful tools
+STRING Write-Host "Installing additional development tools..." -ForegroundColor Green
+ENTER
+STRING choco install wget curl 7zip -y
+ENTER
+DELAY 30000
+
+REM Postman for API testing
+STRING choco install postman -y
+ENTER
+DELAY 60000
+
+REM Windows Terminal
+STRING choco install microsoft-windows-terminal -y
+ENTER
+DELAY 30000
+
+REM Refresh PATH again
+STRING refreshenv
+ENTER
+DELAY 2000
+
+REM Install Python packages
+STRING Write-Host "Installing Python packages..." -ForegroundColor Yellow
+ENTER
+STRING pip install --upgrade pip
+ENTER
+DELAY 10000
+STRING pip install requests flask django fastapi pandas numpy matplotlib jupyter notebook pylint black
+ENTER
+DELAY 60000
+
+REM Install Node.js global packages
+STRING Write-Host "Installing Node.js global packages..." -ForegroundColor Yellow
+ENTER
+STRING npm install -g create-react-app @angular/cli vue-cli express-generator nodemon typescript ts-node eslint prettier
+ENTER
+DELAY 60000
+
+REM Configure Git (basic setup)
+STRING Write-Host "Configuring Git..." -ForegroundColor Yellow
+ENTER
+STRING git config --global user.name "Developer"
+ENTER
+STRING git config --global user.email "dev@example.com"
+ENTER
+STRING git config --global init.defaultBranch main
+ENTER
+DELAY 2000
+
+REM Install VS Code extensions
+STRING Write-Host "Installing VS Code extensions..." -ForegroundColor Yellow
+ENTER
+STRING code --install-extension ms-python.python
+ENTER
+DELAY 5000
+STRING code --install-extension ms-vscode.vscode-typescript-next
+ENTER
+DELAY 5000
+STRING code --install-extension bradlc.vscode-tailwindcss
+ENTER
+DELAY 5000
+STRING code --install-extension esbenp.prettier-vscode
+ENTER
+DELAY 5000
+STRING code --install-extension ms-vscode.vscode-json
+ENTER
+DELAY 5000
+STRING code --install-extension ritwickdey.LiveServer
+ENTER
+DELAY 5000
+STRING code --install-extension ms-vscode-remote.remote-containers
+ENTER
+DELAY 5000
+STRING code --install-extension GitLens.gitlens
+ENTER
+DELAY 5000
+
+REM Create sample projects
+STRING Write-Host "Creating sample project templates..." -ForegroundColor Yellow
+ENTER
+
+REM Python Flask starter
+STRING cd C:\Dev\Projects
+ENTER
+STRING New-Item -ItemType Directory -Path "flask-starter" -Force
+ENTER
+STRING cd flask-starter
+ENTER
+STRING @"
+ENTER
+STRING from flask import Flask, jsonify, request
+ENTER
+STRING 
+ENTER
+STRING app = Flask(__name__)
+ENTER
+STRING 
+ENTER
+STRING @app.route('/')
+ENTER
+STRING def hello_world():
+ENTER
+STRING     return jsonify({"message": "Hello, World!", "status": "success"})
+ENTER
+STRING 
+ENTER
+STRING @app.route('/api/data', methods=['GET', 'POST'])
+ENTER
+STRING def handle_data():
+ENTER
+STRING     if request.method == 'GET':
+ENTER
+STRING         return jsonify({"data": "Sample data", "method": "GET"})
+ENTER
+STRING     elif request.method == 'POST':
+ENTER
+STRING         return jsonify({"data": request.json, "method": "POST"})
+ENTER
+STRING 
+ENTER
+STRING if __name__ == '__main__':
+ENTER
+STRING     app.run(debug=True, host='0.0.0.0', port=5000)
+ENTER
+STRING "@ | Out-File -FilePath "app.py" -Encoding utf8
+ENTER
+DELAY 2000
+
+REM Requirements.txt for Flask project
+STRING @"
+ENTER
+STRING Flask==2.3.2
+ENTER
+STRING Werkzeug==2.3.6
+ENTER
+STRING Jinja2==3.1.2
+ENTER
+STRING "@ | Out-File -FilePath "requirements.txt" -Encoding utf8
+ENTER
+
+REM Node.js Express starter
+STRING cd C:\Dev\Projects
+ENTER
+STRING New-Item -ItemType Directory -Path "express-starter" -Force
+ENTER
+STRING cd express-starter
+ENTER
+STRING npm init -y
+ENTER
+DELAY 5000
+STRING npm install express cors helmet morgan
+ENTER
+DELAY 20000
+
+STRING @"
+ENTER
+STRING const express = require('express');
+ENTER
+STRING const cors = require('cors');
+ENTER
+STRING const helmet = require('helmet');
+ENTER
+STRING const morgan = require('morgan');
+ENTER
+STRING 
+ENTER
+STRING const app = express();
+ENTER
+STRING const PORT = process.env.PORT || 3000;
+ENTER
+STRING 
+ENTER
+STRING // Middleware
+ENTER
+STRING app.use(helmet());
+ENTER
+STRING app.use(cors());
+ENTER
+STRING app.use(morgan('combined'));
+ENTER
+STRING app.use(express.json());
+ENTER
+STRING app.use(express.urlencoded({ extended: true }));
+ENTER
+STRING 
+ENTER
+STRING // Routes
+ENTER
+STRING app.get('/', (req, res) => {
+ENTER
+STRING   res.json({ message: 'Hello, World!', status: 'success' });
+ENTER
+STRING });
+ENTER
+STRING 
+ENTER
+STRING app.get('/api/health', (req, res) => {
+ENTER
+STRING   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+ENTER
+STRING });
+ENTER
+STRING 
+ENTER
+STRING // Start server
+ENTER
+STRING app.listen(PORT, () => {
+ENTER
+STRING   console.log(`Server is running on port ${PORT}`);
+ENTER
+STRING });
+ENTER
+STRING "@ | Out-File -FilePath "server.js" -Encoding utf8
+ENTER
+DELAY 2000
+
+REM Create useful development scripts
+STRING cd C:\Dev\Scripts
+ENTER
+
+REM Project initializer script
+STRING @"
+ENTER
+STRING # Project Initializer Script
+ENTER
+STRING param(
+ENTER
+STRING     [Parameter(Mandatory=$true)]
+ENTER
+STRING     [string]$ProjectName,
+ENTER
+STRING     
+ENTER
+STRING     [Parameter(Mandatory=$true)]
+ENTER
+STRING     [ValidateSet("python", "node", "react", "vue", "django")]
+ENTER
+STRING     [string]$ProjectType
+ENTER
+STRING )
+ENTER
+STRING 
+ENTER
+STRING $projectPath = "C:\Dev\Projects\$ProjectName"
+ENTER
+STRING New-Item -ItemType Directory -Path $projectPath -Force
+ENTER
+STRING cd $projectPath
+ENTER
+STRING 
+ENTER
+STRING switch ($ProjectType) {
+ENTER
+STRING     "python" {
+ENTER
+STRING         python -m venv venv
+ENTER
+STRING         .\venv\Scripts\Activate.ps1
+ENTER
+STRING         pip install flask requests
+ENTER
+STRING         New-Item -ItemType File -Path "app.py"
+ENTER
+STRING         New-Item -ItemType File -Path "requirements.txt"
+ENTER
+STRING     }
+ENTER
+STRING     "node" {
+ENTER
+STRING         npm init -y
+ENTER
+STRING         npm install express
+ENTER
+STRING         New-Item -ItemType File -Path "server.js"
+ENTER
+STRING     }
+ENTER
+STRING     "react" {
+ENTER
+STRING         npx create-react-app . --template typescript
+ENTER
+STRING     }
+ENTER
+STRING }
+ENTER
+STRING 
+ENTER
+STRING Write-Host "Project $ProjectName created successfully!" -ForegroundColor Green
+ENTER
+STRING code .
+ENTER
+STRING "@ | Out-File -FilePath "New-Project.ps1" -Encoding utf8
+ENTER
+DELAY 2000
+
+REM System info script for development
+STRING @"
+ENTER
+STRING # Development Environment Info
+ENTER
+STRING Write-Host "=== Development Environment Information ===" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "Node.js Version: $(node --version)" -ForegroundColor Green
+ENTER
+STRING Write-Host "npm Version: $(npm --version)" -ForegroundColor Green
+ENTER
+STRING Write-Host "Python Version: $(python --version)" -ForegroundColor Green
+ENTER
+STRING Write-Host "pip Version: $(pip --version)" -ForegroundColor Green
+ENTER
+STRING Write-Host "Git Version: $(git --version)" -ForegroundColor Green
+ENTER
+STRING Write-Host "Java Version: $(java -version 2>&1 | Select-Object -First 1)" -ForegroundColor Green
+ENTER
+STRING Write-Host "Docker Version: $(docker --version)" -ForegroundColor Green
+ENTER
+STRING Write-Host "VS Code Version: $(code --version | Select-Object -First 1)" -ForegroundColor Green
+ENTER
+STRING "@ | Out-File -FilePath "Dev-Info.ps1" -Encoding utf8
+ENTER
+
+REM Create README for the development environment
+STRING cd C:\Dev
+ENTER
+STRING @"
+ENTER
+STRING # Development Environment Setup
+ENTER
+STRING 
+ENTER
+STRING This development environment includes:
+ENTER
+STRING 
+ENTER
+STRING ## Installed Tools
+ENTER
+STRING - Git (Version Control)
+ENTER
+STRING - Visual Studio Code (Code Editor)
+ENTER
+STRING - Node.js & npm (JavaScript Runtime)
+ENTER
+STRING - Python & pip (Python Runtime)
+ENTER
+STRING - OpenJDK (Java Development Kit)
+ENTER
+STRING - Docker Desktop (Containerization)
+ENTER
+STRING - Postman (API Testing)
+ENTER
+STRING - Windows Terminal (Terminal)
+ENTER
+STRING 
+ENTER
+STRING ## Programming Languages Support
+ENTER
+STRING - JavaScript/TypeScript (Node.js, React, Angular, Vue)
+ENTER
+STRING - Python (Flask, Django, FastAPI)
+ENTER
+STRING - Java (Spring Boot ready)
+ENTER
+STRING 
+ENTER
+STRING ## Directory Structure
+ENTER
+STRING - C:\Dev\Projects\ - Your project files
+ENTER
+STRING - C:\Dev\Tools\ - Additional development tools
+ENTER
+STRING - C:\Dev\Scripts\ - Utility scripts
+ENTER
+STRING 
+ENTER
+STRING ## Useful Scripts
+ENTER
+STRING - New-Project.ps1 - Create new projects quickly
+ENTER
+STRING - Dev-Info.ps1 - Show installed versions
+ENTER
+STRING 
+ENTER
+STRING ## Getting Started
+ENTER
+STRING 1. Open Windows Terminal or PowerShell
+ENTER
+STRING 2. Navigate to C:\Dev\Projects
+ENTER
+STRING 3. Run: .\Scripts\New-Project.ps1 -ProjectName "MyApp" -ProjectType "python"
+ENTER
+STRING 4. Start coding!
+ENTER
+STRING 
+ENTER
+STRING ## VS Code Extensions Installed
+ENTER
+STRING - Python Support
+ENTER
+STRING - TypeScript Support
+ENTER
+STRING - Tailwind CSS
+ENTER
+STRING - Prettier (Code Formatter)
+ENTER
+STRING - Live Server
+ENTER
+STRING - Docker Support
+ENTER
+STRING - GitLens
+ENTER
+STRING 
+ENTER
+STRING Happy Coding! 🚀
+ENTER
+STRING "@ | Out-File -FilePath "README.md" -Encoding utf8
+ENTER
+
+REM Set up PowerShell profile for development
+STRING Write-Host "Setting up PowerShell profile..." -ForegroundColor Yellow
+ENTER
+STRING $profilePath = $PROFILE
+ENTER
+STRING if (!(Test-Path -Path $profilePath)) {
+ENTER
+STRING     New-Item -ItemType File -Path $profilePath -Force
+ENTER
+STRING }
+ENTER
+STRING @"
+ENTER
+STRING # Development Environment PowerShell Profile
+ENTER
+STRING 
+ENTER
+STRING # Useful aliases
+ENTER
+STRING Set-Alias ll Get-ChildItem
+ENTER
+STRING Set-Alias grep Select-String
+ENTER
+STRING 
+ENTER
+STRING # Quick navigation
+ENTER
+STRING function dev { cd C:\Dev\Projects }
+ENTER
+STRING function scripts { cd C:\Dev\Scripts }
+ENTER
+STRING 
+ENTER
+STRING # Git shortcuts
+ENTER
+STRING function gs { git status }
+ENTER
+STRING function ga { git add . }
+ENTER
+STRING function gc { param($message) git commit -m $message }
+ENTER
+STRING function gp { git push }
+ENTER
+STRING 
+ENTER
+STRING # Python virtual environment
+ENTER
+STRING function activate { .\venv\Scripts\Activate.ps1 }
+ENTER
+STRING 
+ENTER
+STRING # Node.js shortcuts  
+ENTER
+STRING function nrs { npm run start }
+ENTER
+STRING function nrb { npm run build }
+ENTER
+STRING function nrt { npm run test }
+ENTER
+STRING 
+ENTER
+STRING Write-Host "Development Environment Loaded!" -ForegroundColor Green
+ENTER
+STRING "@ | Add-Content -Path $profilePath
+ENTER
+
+REM Final setup summary
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "    SETUP COMPLETE!" -ForegroundColor Green
+ENTER
+STRING Write-Host "========================================" -ForegroundColor Cyan
+ENTER
+STRING Write-Host "Development environment successfully installed!" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "Tools installed:" -ForegroundColor White
+ENTER
+STRING Write-Host "✓ Git" -ForegroundColor Green
+ENTER
+STRING Write-Host "✓ Visual Studio Code" -ForegroundColor Green  
+ENTER
+STRING Write-Host "✓ Node.js & npm" -ForegroundColor Green
+ENTER
+STRING Write-Host "✓ Python & pip" -ForegroundColor Green
+ENTER
+STRING Write-Host "✓ OpenJDK" -ForegroundColor Green
+ENTER
+STRING Write-Host "✓ Docker Desktop" -ForegroundColor Green
+ENTER
+STRING Write-Host "✓ Postman" -ForegroundColor Green
+ENTER
+STRING Write-Host "✓ Windows Terminal" -ForegroundColor Green
+ENTER
+STRING Write-Host "" -ForegroundColor White
+ENTER
+STRING Write-Host "Sample projects created in C:\Dev\Projects" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "Utility scripts available in C:\Dev\Scripts" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "Check README.md in C:\Dev for details" -ForegroundColor Yellow
+ENTER
+STRING Write-Host "" -ForegroundColor White
+ENTER
+STRING Write-Host "Restart your terminal to load the new profile!" -ForegroundColor Red
+ENTER
+
+REM Open the development folder
+STRING explorer C:\Dev
+ENTER
+
+REM Open VS Code in the projects folder
+DELAY 2000
+STRING code C:\Dev\Projects
+ENTER
+
+DELAY 2000

@@ -1,0 +1,232 @@
+REM Ubuntu Server 22.04 LTS Installation with Docker and Essential Services
+REM This payload configures Ubuntu Server with Docker, SSH, and common dev tools
+REM Author: MHC Project
+REM Version: 1.0
+
+DELAY 3000
+REM Assumes we're in Ubuntu Server installer
+
+REM Language Selection (English)
+ENTER
+DELAY 2000
+
+REM Installer Update (Skip)
+TAB
+ENTER
+DELAY 3000
+
+REM Keyboard Configuration (Use defaults)
+ENTER
+DELAY 2000
+ENTER
+DELAY 2000
+
+REM Network Configuration (Use DHCP)
+ENTER
+DELAY 3000
+
+REM Proxy Configuration (Skip)
+ENTER
+DELAY 2000
+
+REM Mirror Configuration (Use defaults)
+ENTER
+DELAY 2000
+
+REM Storage Configuration (Use entire disk)
+ENTER
+DELAY 2000
+ENTER
+DELAY 2000
+TAB
+TAB
+ENTER
+DELAY 2000
+
+REM Profile Setup
+STRING ubuntu-server
+TAB
+STRING Ubuntu Server
+TAB
+STRING admin
+TAB
+STRING ubuntu123
+TAB
+STRING ubuntu123
+ENTER
+DELAY 2000
+
+REM SSH Setup (Install OpenSSH server)
+SPACE
+ENTER
+DELAY 2000
+
+REM Featured Server Snaps (Skip for now)
+ENTER
+DELAY 2000
+
+REM Wait for installation to complete
+DELAY 600000
+
+REM Reboot
+ENTER
+DELAY 30000
+
+REM Login after reboot
+STRING admin
+ENTER
+DELAY 1000
+STRING ubuntu123
+ENTER
+DELAY 3000
+
+REM Update system
+STRING sudo apt update && sudo apt upgrade -y
+ENTER
+DELAY 2000
+STRING ubuntu123
+ENTER
+DELAY 60000
+
+REM Install essential packages
+STRING sudo apt install -y curl wget git vim htop tree unzip software-properties-common apt-transport-https ca-certificates gnupg lsb-release
+ENTER
+DELAY 30000
+
+REM Install Docker
+STRING curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+ENTER
+DELAY 5000
+
+STRING echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+ENTER
+DELAY 2000
+
+STRING sudo apt update
+ENTER
+DELAY 10000
+
+STRING sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose
+ENTER
+DELAY 30000
+
+REM Add user to docker group
+STRING sudo usermod -aG docker admin
+ENTER
+DELAY 1000
+
+REM Install Node.js
+STRING curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+ENTER
+DELAY 10000
+STRING sudo apt install -y nodejs
+ENTER
+DELAY 15000
+
+REM Install Python pip
+STRING sudo apt install -y python3-pip
+ENTER
+DELAY 10000
+
+REM Configure firewall
+STRING sudo ufw enable
+ENTER
+STRING y
+ENTER
+STRING sudo ufw allow ssh
+ENTER
+STRING sudo ufw allow 80
+ENTER
+STRING sudo ufw allow 443
+ENTER
+
+REM Create useful directories
+STRING mkdir -p ~/projects ~/scripts ~/backups
+ENTER
+
+REM Create a simple system monitoring script
+STRING cat > ~/scripts/sysinfo.sh << 'EOF'
+ENTER
+STRING #!/bin/bash
+ENTER
+STRING echo "=== System Information ==="
+ENTER
+STRING echo "Hostname: $(hostname)"
+ENTER
+STRING echo "Uptime: $(uptime -p)"
+ENTER
+STRING echo "Load Average: $(uptime | cut -d',' -f3-5)"
+ENTER
+STRING echo "Memory Usage: $(free -h | grep '^Mem' | awk '{print $3 "/" $2}')"
+ENTER
+STRING echo "Disk Usage: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 " used)"}')"
+ENTER
+STRING echo "Network: $(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1 | head -1)"
+ENTER
+STRING echo "Docker Status: $(systemctl is-active docker)"
+ENTER
+STRING EOF
+ENTER
+
+STRING chmod +x ~/scripts/sysinfo.sh
+ENTER
+
+REM Setup bash aliases
+STRING cat >> ~/.bashrc << 'EOF'
+ENTER
+STRING 
+ENTER
+STRING # Custom aliases
+ENTER
+STRING alias ll='ls -alF'
+ENTER
+STRING alias la='ls -A'
+ENTER
+STRING alias l='ls -CF'
+ENTER
+STRING alias ..='cd ..'
+ENTER
+STRING alias ...='cd ../..'
+ENTER
+STRING alias sysinfo='~/scripts/sysinfo.sh'
+ENTER
+STRING alias dps='docker ps'
+ENTER
+STRING alias dimg='docker images'
+ENTER
+STRING alias dlog='docker logs'
+ENTER
+STRING alias dcup='docker-compose up -d'
+ENTER
+STRING alias dcdown='docker-compose down'
+ENTER
+STRING EOF
+ENTER
+
+REM Enable Docker service
+STRING sudo systemctl enable docker
+ENTER
+STRING sudo systemctl start docker
+ENTER
+
+REM Test Docker installation
+STRING docker --version
+ENTER
+STRING docker-compose --version
+ENTER
+
+REM Show system information
+STRING ~/scripts/sysinfo.sh
+ENTER
+
+REM Display completion message
+STRING echo "Ubuntu Server setup complete!"
+ENTER
+STRING echo "Services installed: Docker, Node.js, Python3"
+ENTER
+STRING echo "User: admin, Password: ubuntu123"
+ENTER
+STRING echo "SSH is enabled and firewall is configured"
+ENTER
+STRING echo "Run 'sysinfo' for system status"
+ENTER
